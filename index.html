@@ -8,13 +8,14 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌊</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <!-- v= serve a invalidare la cache dei browser: va aumentato a ogni deploy -->
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <header class="topbar">
-    <a href="#/" class="brand">🌊 <span>Mercatino Nautico <b>TS</b></span></a>
+    <a href="#/" class="brand">🌊 Mercatino Nautico <b>TS</b></a>
     <nav id="nav">
-      <a href="#/negozio" class="navlink">🏪 Negozio</a>
+      <a href="#/negozio" class="navlink">Negozio</a>
       <a href="#/nuovo" class="btn btn-primary btn-sm">+ Pubblica</a>
       <a href="#/miei" id="nav-miei" class="navlink hidden">I miei</a>
       <a href="#/login" id="nav-login" class="navlink">Accedi</a>
@@ -31,17 +32,29 @@
   </footer>
 
   <nav class="bottomnav" id="bottomnav">
-    <a href="#/" data-route="">🌊<span>Annunci</span></a>
-    <a href="#/negozio" data-route="negozio">🏪<span>Negozio</span></a>
-    <a href="#/nuovo" data-route="nuovo">➕<span>Pubblica</span></a>
-    <a href="#/miei" data-route="miei" id="bn-miei">👤<span>I miei</span></a>
+    <a href="#/" data-route="">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></svg>
+      <span>Annunci</span>
+    </a>
+    <a href="#/negozio" data-route="negozio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l1.5-3.5h13L20 7"/><path d="M4 7h16v3a2.5 2.5 0 0 1-5 0 2.5 2.5 0 0 1-5 0v0a2.5 2.5 0 0 1-5 0z"/><path d="M5 12.5V20h14v-7.5"/><path d="M9.5 20v-4.5h5V20"/></svg>
+      <span>Negozio</span>
+    </a>
+    <a href="#/nuovo" data-route="nuovo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8.5v7M8.5 12h7"/></svg>
+      <span>Pubblica</span>
+    </a>
+    <a href="#/miei" data-route="miei" id="bn-miei">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.5 3.6-5.5 7-5.5s6.2 2 7 5.5"/></svg>
+      <span id="bn-miei-label">I miei</span>
+    </a>
   </nav>
 
   <div id="toast" class="toast hidden"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="config.js"></script>
-  <script src="demo-data.js"></script>
-  <script src="app.js"></script>
+  <script src="config.js?v=4"></script>
+  <script src="demo-data.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

@@ -29,10 +29,10 @@
     "windsurf": "🏄", "wing": "🪁", "vele": "⛵"
   };
   var DISPO = {
-    disponibile: { label: "✅ Disponibile", cls: "dispo-ok" },
-    ordinazione: { label: "📦 Su ordinazione", cls: "dispo-ord" },
-    ultimi: { label: "⚠️ Ultimi pezzi", cls: "dispo-ult" },
-    esaurito: { label: "❌ Esaurito", cls: "dispo-no" }
+    disponibile: { label: "Disponibile", cls: "dispo-ok" },
+    ordinazione: { label: "Su ordinazione", cls: "dispo-ord" },
+    ultimi: { label: "Ultimi pezzi", cls: "dispo-ult" },
+    esaurito: { label: "Esaurito", cls: "dispo-no" }
   };
 
   var $app = document.getElementById("app");
@@ -212,8 +212,8 @@
 
     var tipoChips = [
       { v: "", l: "Tutti" },
-      { v: "vendo", l: "🏷 Vendo" },
-      { v: "cerco", l: "🔍 Cerco" }
+      { v: "vendo", l: "Vendo" },
+      { v: "cerco", l: "Cerco" }
     ].map(function (t) {
       return '<button class="chip' + (filtro.tipo === t.v ? " active" : "") + '" data-tipo="' + t.v + '">' + t.l + "</button>";
     });
@@ -221,7 +221,7 @@
     var chips = ['<button class="chip' + (filtro.cat === "" ? " active" : "") + '" data-cat="">Tutte</button>'];
     Object.keys(CATEGORIE).forEach(function (k) {
       chips.push('<button class="chip' + (filtro.cat === k ? " active" : "") + '" data-cat="' + k + '">' +
-        CAT_ICON[k] + " " + CATEGORIE[k] + "</button>");
+        CATEGORIE[k] + "</button>");
     });
 
     var cards = visibili.map(cardHtml).join("");
@@ -258,7 +258,7 @@
       if (i.venditore && nomi.indexOf(i.venditore) < 0) nomi.push(i.venditore);
     });
     $app.innerHTML =
-      '<div class="negozio-head"><h2>🏪 Negozio</h2>' +
+      '<div class="negozio-head"><h2>Negozio</h2>' +
       '<p>Materiale nuovo e d\'occasione dei negozianti del gruppo' + (nomi.length ? " — " + esc(nomi.join(", ")) : "") + ". Prezzi e disponibilità aggiornati da loro.</p></div>" +
       (items.length
         ? '<div class="grid">' + items.map(cardHtml).join("") + "</div>"
@@ -308,8 +308,8 @@
         (tel
           ? '<div class="share-row">' +
             '<a class="btn btn-wa btn-sm" href="https://wa.me/' + esc(tel.replace(/^\+/, "").replace(/^00/, "")) +
-            "?text=" + encodeURIComponent("Ciao! Ti scrivo per l'annuncio: " + i.titolo) + '" target="_blank" rel="noopener">💬 WhatsApp</a>' +
-            '<a class="btn btn-ghost btn-sm" href="tel:' + esc(tel) + '">📞 ' + esc(i.telefono) + "</a></div>"
+            "?text=" + encodeURIComponent("Ciao! Ti scrivo per l'annuncio: " + i.titolo) + '" target="_blank" rel="noopener">WhatsApp</a>' +
+            '<a class="btn btn-ghost btn-sm" href="tel:' + esc(tel) + '">' + esc(i.telefono) + "</a></div>"
           : "<span>Rispondi al suo messaggio nel gruppo WhatsApp del mercatino.</span>") +
         "</div>";
     }
@@ -319,10 +319,10 @@
       '<div class="detail-body">' +
       '<div class="detail-head"><div>' +
       (i.stato === "venduto" ? '<span class="pill-venduto">' + (cerco ? "TROVATO" : "VENDUTO") + "</span> " : "") +
-      (cerco && i.stato !== "venduto" ? '<span class="pill-cerco">🔍 CERCO</span> ' : "") +
+      (cerco && i.stato !== "venduto" ? '<span class="pill-cerco">CERCO</span> ' : "") +
       (i.negozio && DISPO[i.dispo] ? '<span class="pill-dispo ' + DISPO[i.dispo].cls + '">' + DISPO[i.dispo].label + "</span> " : "") +
       '<div class="detail-title">' + esc(i.titolo) + "</div>" +
-      '<div class="detail-meta">' + (i.negozio ? "🏪 Negozio · " : "") + (CAT_ICON[i.categoria] || "") + " " + esc(CATEGORIE[i.categoria] || i.categoria) +
+      '<div class="detail-meta">' + (i.negozio ? "Negozio · " : "") + esc(CATEGORIE[i.categoria] || i.categoria) +
       " · pubblicato " + fmtData(i.created_at) + (i.venditore ? " da <b>" + esc(i.venditore) + "</b>" : "") + "</div>" +
       "</div>" +
       '<div class="detail-price">' + fmtPrezzo(i.prezzo) + "</div></div>" +
@@ -336,15 +336,15 @@
       (i.descrizione ? '<div class="detail-desc">' + esc(i.descrizione) + "</div>" : "") +
       contatto +
       '<div class="share-row">' +
-      '<button class="btn btn-blu btn-sm" id="btn-copy">🔗 Copia link</button>' +
-      '<a class="btn btn-wa btn-sm" href="https://wa.me/?text=' + encodeURIComponent(shareText) + '" target="_blank" rel="noopener">📤 Manda sul gruppo</a>' +
+      '<button class="btn btn-blu btn-sm" id="btn-copy">Copia link</button>' +
+      '<a class="btn btn-wa btn-sm" href="https://wa.me/?text=' + encodeURIComponent(shareText) + '" target="_blank" rel="noopener">Manda sul gruppo</a>' +
       "</div>" +
       (mio
         ? '<div class="share-row owner-row">' +
-          '<a class="btn btn-ghost btn-sm" href="#/modifica/' + esc(i.id) + '">✏️ Modifica</a>' +
+          '<a class="btn btn-ghost btn-sm" href="#/modifica/' + esc(i.id) + '">Modifica</a>' +
           (!i.negozio ? '<button class="btn ' + (i.stato === "venduto" ? "btn-verde" : "btn-blu") + ' btn-sm" id="btn-stato">' +
-            (i.stato === "venduto" ? (cerco ? "Riapri ricerca" : "Rimetti in vendita") : (cerco ? "✔ Segna trovato" : "✔ Segna venduto")) + "</button>" : "") +
-          '<button class="btn btn-danger btn-sm" id="btn-del">🗑 Elimina</button>' +
+            (i.stato === "venduto" ? (cerco ? "Riapri ricerca" : "Rimetti in vendita") : (cerco ? "Segna trovato" : "Segna venduto")) + "</button>" : "") +
+          '<button class="btn btn-danger btn-sm" id="btn-del">Elimina</button>' +
           "</div>"
         : "") +
       '<div><a href="#/">‹ Tutti gli annunci</a></div>' +
@@ -414,7 +414,7 @@
 
     var catOpts = Object.keys(CATEGORIE).map(function (k) {
       var sel = (item ? item.categoria === k : k === "tavola-windsurf") ? " selected" : "";
-      return '<option value="' + k + '"' + sel + ">" + CAT_ICON[k] + " " + CATEGORIE[k] + "</option>";
+      return '<option value="' + k + '"' + sel + ">" + CATEGORIE[k] + "</option>";
     }).join("");
 
     var tipoVal = item ? item.tipo || "vendo" : "vendo";
@@ -424,14 +424,14 @@
     }).join("");
 
     $app.innerHTML =
-      '<div class="panel"><h2>' + (item ? "✏️ Modifica annuncio" : "📦 Nuovo annuncio") + "</h2>" +
+      '<div class="panel"><h2>' + (item ? "Modifica annuncio" : "Nuovo annuncio") + "</h2>" +
       '<form id="form-item">' +
       '<div class="field"><label>Tipo</label><div class="seg" id="f-tipo">' +
-      '<label class="seg-opt"><input type="radio" name="tipo" value="vendo"' + (tipoVal === "vendo" ? " checked" : "") + "> 🏷 Vendo</label>" +
-      '<label class="seg-opt"><input type="radio" name="tipo" value="cerco"' + (tipoVal === "cerco" ? " checked" : "") + "> 🔍 Cerco</label>" +
+      '<label class="seg-opt"><input type="radio" name="tipo" value="vendo"' + (tipoVal === "vendo" ? " checked" : "") + "> Vendo</label>" +
+      '<label class="seg-opt"><input type="radio" name="tipo" value="cerco"' + (tipoVal === "cerco" ? " checked" : "") + "> Cerco</label>" +
       "</div></div>" +
       (negoziante
-        ? '<div class="field negozio-field"><label class="toggle-venduti" style="font-size:.9rem"><input type="checkbox" id="f-negozio"' + (item && item.negozio ? " checked" : "") + "> 🏪 <b>Annuncio del negozio</b> (" + esc(negoziante.nome) + ")</label>" +
+        ? '<div class="field negozio-field"><label class="toggle-venduti" style="font-size:.9rem"><input type="checkbox" id="f-negozio"' + (item && item.negozio ? " checked" : "") + "> <b>Annuncio del negozio</b> (" + esc(negoziante.nome) + ")</label>" +
           '<div id="f-dispo-wrap" class="' + (item && item.negozio ? "" : "hidden") + '" style="margin-top:8px"><label>Disponibilità</label><select id="f-dispo">' + dispoOpts + "</select></div></div>"
         : "") +
       '<div class="field"><label>Titolo *</label><input id="f-titolo" required maxlength="90" placeholder="Es. Tavola wing 105L Duotone" value="' + esc(item ? item.titolo : "") + '"></div>' +
@@ -450,7 +450,7 @@
       '<div class="field"><label>Telefono (facoltativo)</label><input id="f-tel" maxlength="20" placeholder="+39 …" value="' + esc(item ? item.telefono || "" : telSalvato) + '"><div class="hint">Se lo metti, sarà visibile a chiunque apra il link.</div></div>' +
       "</div>" +
       '<div class="field"><label>Foto (fino a 6)</label>' +
-      '<div class="photo-picker" id="picker">📷 Tocca per aggiungere foto<br><span class="hint">vengono compresse automaticamente</span></div>' +
+      '<div class="photo-picker" id="picker"><b>Tocca per aggiungere foto</b><br><span class="hint">vengono compresse automaticamente</span></div>' +
       '<input type="file" id="f-foto" accept="image/*" multiple style="display:none">' +
       '<div class="photo-previews" id="previews"></div></div>' +
       '<div class="share-row">' +
@@ -600,8 +600,8 @@
         var img = primaFoto(i);
         var cerco = i.tipo === "cerco";
         var statoTxt = i.negozio
-          ? "🏪 negozio · " + (DISPO[i.dispo] ? DISPO[i.dispo].label : "")
-          : (i.stato === "venduto" ? (cerco ? "✔ trovato" : "🔴 venduto") : (cerco ? "🔍 cerco" : "🟢 in vendita"));
+          ? "Negozio · " + (DISPO[i.dispo] ? DISPO[i.dispo].label : "")
+          : (i.stato === "venduto" ? (cerco ? "Trovato" : "Venduto") : (cerco ? "Cerco" : "In vendita"));
         var btnStato = i.negozio ? "" :
           '<button class="btn ' + (i.stato === "venduto" ? "btn-verde" : "btn-blu") + ' btn-sm act-stato">' +
           (i.stato === "venduto" ? (cerco ? "Riapri ricerca" : "Rimetti in vendita") : (cerco ? "Segna trovato" : "Segna venduto")) + "</button>";
@@ -609,10 +609,10 @@
           '<a class="thumb" href="#/annuncio/' + esc(i.id) + '"' + (img ? ' style="background-image:url(\'' + esc(img) + '\')"' : "") + ">" + (img ? "" : (cerco ? "🔍" : (CAT_ICON[i.categoria] || "📦"))) + "</a>" +
           '<div class="mine-info"><div class="t">' + esc(i.titolo) + '</div><div class="p">' + fmtPrezzo(i.prezzo) + '</div><div class="s">' + statoTxt + " · " + fmtData(i.created_at) + "</div></div>" +
           '<div class="mine-actions">' +
-          '<button class="btn btn-ghost btn-sm act-prezzo">€ Prezzo</button>' +
+          '<button class="btn btn-ghost btn-sm act-prezzo">Prezzo</button>' +
           btnStato +
-          '<a class="btn btn-ghost btn-sm" href="#/modifica/' + esc(i.id) + '">✏️</a>' +
-          '<button class="btn btn-danger btn-sm act-del">🗑</button>' +
+          '<a class="btn btn-ghost btn-sm" href="#/modifica/' + esc(i.id) + '">Modifica</a>' +
+          '<button class="btn btn-danger btn-sm act-del">Elimina</button>' +
           "</div></div>";
       }).join("") + "</div>";
 
@@ -651,7 +651,7 @@
     if (DEMO) { requireLogin(); return; }
     if (session) { location.hash = "#/miei"; return; }
     $app.innerHTML =
-      '<div class="panel login-box"><h2>🔑 Accedi</h2>' +
+      '<div class="panel login-box"><h2>Accedi</h2>' +
       '<p style="font-size:.9rem;color:var(--grigio);margin-bottom:14px">Niente password: ti mandiamo un <b>link di accesso</b> via email. Aprilo e sei dentro.</p>' +
       '<form id="form-login">' +
       '<div class="field"><label>La tua email</label><input id="f-email" type="email" required placeholder="nome@esempio.it"></div>' +
@@ -683,13 +683,8 @@
     document.getElementById("nav-logout").classList.toggle("hidden", !session);
     document.getElementById("nav-miei").classList.toggle("hidden", !session);
     var bn = document.getElementById("bn-miei");
-    if (session) {
-      bn.href = "#/miei";
-      bn.innerHTML = "👤<span>I miei</span>";
-    } else {
-      bn.href = "#/login";
-      bn.innerHTML = "🔑<span>Accedi</span>";
-    }
+    bn.href = session ? "#/miei" : "#/login";
+    document.getElementById("bn-miei-label").textContent = session ? "I miei" : "Accedi";
   }
 
   function route() {
