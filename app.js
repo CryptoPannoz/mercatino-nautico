@@ -7,16 +7,26 @@
   var sb = DEMO ? null : window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
 
   var CATEGORIE = {
-    windsurf: "Windsurf",
-    wing: "Wing / Wingfoil",
-    foil: "Foil",
-    sup: "SUP",
-    vele: "Vele e wing",
-    accessori: "Accessori",
-    altro: "Altro"
+    "tavola-windsurf": "Tavola windsurf",
+    "vela": "Vela windsurf",
+    "albero": "Albero",
+    "boma": "Boma",
+    "tavola-wing": "Tavola wing/foil",
+    "ala": "Ala (wing)",
+    "foil": "Foil",
+    "sup": "SUP",
+    "kite": "Kite",
+    "trapezio": "Trapezio",
+    "muta": "Muta",
+    "accessori": "Accessori",
+    "altro": "Altro"
   };
   var CAT_ICON = {
-    windsurf: "🏄", wing: "🪁", foil: "🛸", sup: "🚣", vele: "⛵", accessori: "🧰", altro: "📦"
+    "tavola-windsurf": "🏄", "vela": "⛵", "albero": "📏", "boma": "🔗",
+    "tavola-wing": "🏂", "ala": "🪁", "foil": "🛸", "sup": "🚣", "kite": "🪂",
+    "trapezio": "🪢", "muta": "🩱", "accessori": "🧰", "altro": "📦",
+    // vecchi valori ancora presenti in annunci già pubblicati
+    "windsurf": "🏄", "wing": "🪁", "vele": "⛵"
   };
   var DISPO = {
     disponibile: { label: "✅ Disponibile", cls: "dispo-ok" },
@@ -100,14 +110,35 @@
 
   /* ---------------- foto: compressione + upload ---------------- */
 
+  // Decodifica robusta: prova createImageBitmap, poi FileReader+Image.
+  // (su iOS i File della galleria possono diventare illeggibili se si aspetta
+  // troppo: per questo la compressione avviene SUBITO alla selezione)
+  function leggiImmagine(file) {
+    function viaReader() {
+      return new Promise(function (resolve, reject) {
+        var fr = new FileReader();
+        fr.onload = function () {
+          var img = new Image();
+          img.onload = function () { resolve(img); };
+          img.onerror = function () { reject(new Error("formato non supportato")); };
+          img.src = fr.result;
+        };
+        fr.onerror = function () { reject(new Error("lettura fallita")); };
+        fr.readAsDataURL(file);
+      });
+    }
+    if (window.createImageBitmap) {
+      return createImageBitmap(file).catch(viaReader);
+    }
+    return viaReader();
+  }
+
   function comprimiFoto(file) {
-    return new Promise(function (resolve, reject) {
-      var img = new Image();
-      var url = URL.createObjectURL(file);
-      img.onload = function () {
-        URL.revokeObjectURL(url);
+    return leggiImmagine(file).then(function (img) {
+      return new Promise(function (resolve, reject) {
         var MAX = 1280;
         var w = img.width, h = img.height;
+        if (!w || !h) { reject(new Error("immagine vuota")); return; }
         if (w > MAX || h > MAX) {
           var k = Math.min(MAX / w, MAX / h);
           w = Math.round(w * k); h = Math.round(h * k);
@@ -115,12 +146,11 @@
         var cv = document.createElement("canvas");
         cv.width = w; cv.height = h;
         cv.getContext("2d").drawImage(img, 0, 0, w, h);
+        if (img.close) img.close();
         cv.toBlob(function (blob) {
           blob ? resolve(blob) : reject(new Error("compressione fallita"));
         }, "image/jpeg", 0.82);
-      };
-      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("file non valido")); };
-      img.src = url;
+      });
     });
   }
 
@@ -151,11 +181,13 @@
     var thumb = img
       ? '<div class="thumb" style="background-image:url(\'' + esc(img) + '\')"></div>'
       : '<div class="thumb">' + (i.tipo === "cerco" ? "🔍" : (CAT_ICON[i.categoria] || "📦")) + "</div>";
+    var specs = [i.marca, i.misura, i.anno].filter(Boolean).join(" · ");
     return '<a class="card' + (i.stato === "venduto" ? " venduto" : "") + '" href="#/annuncio/' + esc(i.id) + '">' +
       cardBadge(i) +
       thumb +
       '<div class="card-body">' +
       '<div class="card-title">' + esc(i.titolo) + "</div>" +
+      (specs ? '<div class="card-specs">' + esc(specs) + "</div>" : "") +
       '<div class="card-price">' + fmtPrezzo(i.prezzo) + "</div>" +
       '<div class="card-meta"><span>' + esc(i.venditore || "") + "</span><span>" + fmtData(i.created_at) + "</span></div>" +
       "</div></a>";
@@ -172,7 +204,7 @@
       if (filtro.cat && i.categoria !== filtro.cat) return false;
       if (filtro.q) {
         var q = filtro.q.toLowerCase();
-        var testo = (i.titolo + " " + (i.descrizione || "")).toLowerCase();
+        var testo = [i.titolo, i.descrizione, i.marca, i.misura, i.venditore].filter(Boolean).join(" ").toLowerCase();
         if (testo.indexOf(q) < 0) return false;
       }
       return true;
@@ -233,6 +265,18 @@
         : '<div class="empty"><div class="big">🏪</div>Il negozio è ancora vuoto.</div>');
   }
 
+  async function eliminaAnnuncio(item) {
+    if (!confirm("Eliminare definitivamente \"" + item.titolo + "\"?\nSe è concluso, meglio segnarlo venduto/trovato: resta nello storico.")) return false;
+    if (item.foto && item.foto.length) {
+      var paths = item.foto.map(function (f) { return f.path; }).filter(Boolean);
+      if (paths.length) await sb.storage.from("foto").remove(paths);
+    }
+    var u = await sb.from("annunci").delete().eq("id", item.id);
+    if (u.error) { toast("Errore: " + u.error.message); return false; }
+    toast("Annuncio eliminato");
+    return true;
+  }
+
   async function viewDettaglio(id) {
     $app.innerHTML = '<div class="loading">Carico…</div>';
     var i = await fetchItem(id);
@@ -282,15 +326,42 @@
       " · pubblicato " + fmtData(i.created_at) + (i.venditore ? " da <b>" + esc(i.venditore) + "</b>" : "") + "</div>" +
       "</div>" +
       '<div class="detail-price">' + fmtPrezzo(i.prezzo) + "</div></div>" +
+      (function () {
+        var specs = [];
+        if (i.marca) specs.push("<b>Marca</b> " + esc(i.marca));
+        if (i.misura) specs.push("<b>Misura</b> " + esc(i.misura));
+        if (i.anno) specs.push("<b>Anno</b> " + esc(i.anno));
+        return specs.length ? '<div class="detail-specs">' + specs.map(function (s) { return '<span class="spec">' + s + "</span>"; }).join("") + "</div>" : "";
+      })() +
       (i.descrizione ? '<div class="detail-desc">' + esc(i.descrizione) + "</div>" : "") +
       contatto +
       '<div class="share-row">' +
       '<button class="btn btn-blu btn-sm" id="btn-copy">🔗 Copia link</button>' +
-      '<a class="btn btn-wa btn-sm" href="https://wa.me/?text=' + encodeURIComponent(shareText) + '" target="_blank" rel="noopener">📤 Condividi su WhatsApp</a>' +
-      (mio ? '<a class="btn btn-ghost btn-sm" href="#/modifica/' + esc(i.id) + '">✏️ Modifica</a>' : "") +
+      '<a class="btn btn-wa btn-sm" href="https://wa.me/?text=' + encodeURIComponent(shareText) + '" target="_blank" rel="noopener">📤 Manda sul gruppo</a>' +
       "</div>" +
+      (mio
+        ? '<div class="share-row owner-row">' +
+          '<a class="btn btn-ghost btn-sm" href="#/modifica/' + esc(i.id) + '">✏️ Modifica</a>' +
+          (!i.negozio ? '<button class="btn ' + (i.stato === "venduto" ? "btn-verde" : "btn-blu") + ' btn-sm" id="btn-stato">' +
+            (i.stato === "venduto" ? (cerco ? "Riapri ricerca" : "Rimetti in vendita") : (cerco ? "✔ Segna trovato" : "✔ Segna venduto")) + "</button>" : "") +
+          '<button class="btn btn-danger btn-sm" id="btn-del">🗑 Elimina</button>' +
+          "</div>"
+        : "") +
       '<div><a href="#/">‹ Tutti gli annunci</a></div>' +
       "</div></div>";
+
+    if (mio) {
+      var btnStato = document.getElementById("btn-stato");
+      if (btnStato) btnStato.onclick = async function () {
+        var nuovo = i.stato === "venduto" ? "disponibile" : "venduto";
+        var u = await sb.from("annunci").update({ stato: nuovo }).eq("id", i.id);
+        if (u.error) toast("Errore: " + u.error.message);
+        else viewDettaglio(i.id);
+      };
+      document.getElementById("btn-del").onclick = async function () {
+        if (await eliminaAnnuncio(i)) location.hash = "#/miei";
+      };
+    }
 
     document.getElementById("btn-copy").onclick = function () {
       navigator.clipboard.writeText(shareText).then(function () {
@@ -342,7 +413,7 @@
     var telSalvato = localStorage.getItem("mercatino-tel") || "";
 
     var catOpts = Object.keys(CATEGORIE).map(function (k) {
-      var sel = (item ? item.categoria === k : k === "windsurf") ? " selected" : "";
+      var sel = (item ? item.categoria === k : k === "tavola-windsurf") ? " selected" : "";
       return '<option value="' + k + '"' + sel + ">" + CAT_ICON[k] + " " + CATEGORIE[k] + "</option>";
     }).join("");
 
@@ -368,7 +439,12 @@
       '<div class="field"><label id="l-prezzo">Prezzo (€) *</label><input id="f-prezzo" type="number" min="0" step="1" required inputmode="numeric" value="' + esc(item && item.prezzo != null ? item.prezzo : "") + '"></div>' +
       '<div class="field"><label>Categoria</label><select id="f-cat">' + catOpts + "</select></div>" +
       "</div>" +
-      '<div class="field"><label>Descrizione</label><textarea id="f-desc" maxlength="1200" placeholder="Condizioni, misure, anno, dove si può vedere…">' + esc(item ? item.descrizione || "" : "") + "</textarea></div>" +
+      '<div class="form-row">' +
+      '<div class="field"><label>Marca</label><input id="f-marca" maxlength="30" placeholder="es. Gong, Duotone…" value="' + esc(item ? item.marca || "" : "") + '"></div>' +
+      '<div class="field"><label>Misura</label><input id="f-misura" maxlength="30" placeholder="es. 105L · 5.3 m² · 400" value="' + esc(item ? item.misura || "" : "") + '"></div>' +
+      '<div class="field"><label>Anno</label><input id="f-anno" type="number" min="1990" max="2030" inputmode="numeric" placeholder="es. 2023" value="' + esc(item && item.anno ? item.anno : "") + '"></div>' +
+      "</div>" +
+      '<div class="field"><label>Descrizione</label><textarea id="f-desc" maxlength="1200" placeholder="Condizioni, dove si può vedere, dettagli…">' + esc(item ? item.descrizione || "" : "") + "</textarea></div>" +
       '<div class="form-row">' +
       '<div class="field"><label>Il tuo nome *</label><input id="f-nome" required maxlength="40" value="' + esc(item ? item.venditore || "" : nomeSalvato) + '"></div>' +
       '<div class="field"><label>Telefono (facoltativo)</label><input id="f-tel" maxlength="20" placeholder="+39 …" value="' + esc(item ? item.telefono || "" : telSalvato) + '"><div class="hint">Se lo metti, sarà visibile a chiunque apra il link.</div></div>' +
@@ -404,7 +480,7 @@
       };
     }
 
-    // stato foto: esistenti {url,path} + nuove (File)
+    // stato foto: esistenti {url,path} + nuove {blob, url} (già compresse)
     var fotoEsistenti = item && item.foto ? item.foto.slice() : [];
     var fotoNuove = [];
 
@@ -422,10 +498,10 @@
         var d = document.createElement("div");
         d.className = "ph";
         var img = document.createElement("img");
-        img.src = URL.createObjectURL(f);
+        img.src = f.url;
         var b = document.createElement("button");
         b.type = "button"; b.className = "rm"; b.textContent = "✕";
-        b.onclick = function () { fotoNuove.splice(n, 1); renderPreviews(); };
+        b.onclick = function () { URL.revokeObjectURL(f.url); fotoNuove.splice(n, 1); renderPreviews(); };
         d.appendChild(img); d.appendChild(b);
         $prev.appendChild(d);
       });
@@ -433,12 +509,25 @@
     renderPreviews();
 
     var $file = document.getElementById("f-foto");
-    document.getElementById("picker").onclick = function () { $file.click(); };
-    $file.onchange = function () {
-      var spazio = 6 - fotoEsistenti.length - fotoNuove.length;
-      Array.prototype.slice.call($file.files, 0, Math.max(0, spazio)).forEach(function (f) { fotoNuove.push(f); });
-      if ($file.files.length > spazio) toast("Massimo 6 foto per annuncio");
+    var $picker = document.getElementById("picker");
+    $picker.onclick = function () { $file.click(); };
+    $file.onchange = async function () {
+      // comprimo SUBITO: su iOS i file della galleria scadono se si aspetta il submit
+      var files = Array.prototype.slice.call($file.files);
       $file.value = "";
+      var testoPicker = $picker.innerHTML;
+      for (var n = 0; n < files.length; n++) {
+        if (fotoEsistenti.length + fotoNuove.length >= 6) { toast("Massimo 6 foto per annuncio"); break; }
+        $picker.innerHTML = "⏳ Comprimo foto " + (n + 1) + "/" + files.length + "…";
+        try {
+          var blob = await comprimiFoto(files[n]);
+          fotoNuove.push({ blob: blob, url: URL.createObjectURL(blob) });
+          renderPreviews();
+        } catch (err) {
+          toast("Foto \"" + (files[n].name || n + 1) + "\" non leggibile: " + (err.message || err));
+        }
+      }
+      $picker.innerHTML = testoPicker;
       renderPreviews();
     };
 
@@ -455,17 +544,20 @@
 
         var fotoFinali = fotoEsistenti.slice();
         for (var n = 0; n < fotoNuove.length; n++) {
-          btn.textContent = "Foto " + (n + 1) + "/" + fotoNuove.length + "…";
-          var blob = await comprimiFoto(fotoNuove[n]);
-          fotoFinali.push(await uploadFoto(blob, session.user.id));
+          btn.textContent = "Carico foto " + (n + 1) + "/" + fotoNuove.length + "…";
+          fotoFinali.push(await uploadFoto(fotoNuove[n].blob, session.user.id));
         }
 
         var isNegozio = !!($negozio && $negozio.checked);
         var prezzoRaw = document.getElementById("f-prezzo").value;
+        var annoRaw = document.getElementById("f-anno").value;
         var record = {
           titolo: document.getElementById("f-titolo").value.trim(),
           prezzo: prezzoRaw === "" ? null : Number(prezzoRaw),
           categoria: document.getElementById("f-cat").value,
+          marca: document.getElementById("f-marca").value.trim() || null,
+          misura: document.getElementById("f-misura").value.trim() || null,
+          anno: annoRaw === "" ? null : Number(annoRaw),
           descrizione: document.getElementById("f-desc").value.trim(),
           venditore: isNegozio ? negoziante.nome : nome,
           telefono: tel,
@@ -550,14 +642,7 @@
       };
 
       row.querySelector(".act-del").onclick = async function () {
-        if (!confirm("Eliminare definitivamente \"" + item.titolo + "\"?\nSe è concluso, meglio segnarlo venduto/trovato: resta nello storico.")) return;
-        if (item.foto && item.foto.length) {
-          var paths = item.foto.map(function (f) { return f.path; }).filter(Boolean);
-          if (paths.length) await sb.storage.from("foto").remove(paths);
-        }
-        var u = await sb.from("annunci").delete().eq("id", id);
-        if (u.error) toast("Errore: " + u.error.message);
-        else { toast("Annuncio eliminato"); viewMiei(); }
+        if (await eliminaAnnuncio(item)) viewMiei();
       };
     });
   }
@@ -597,10 +682,23 @@
     document.getElementById("nav-login").classList.toggle("hidden", !!session || DEMO);
     document.getElementById("nav-logout").classList.toggle("hidden", !session);
     document.getElementById("nav-miei").classList.toggle("hidden", !session);
+    var bn = document.getElementById("bn-miei");
+    if (session) {
+      bn.href = "#/miei";
+      bn.innerHTML = "👤<span>I miei</span>";
+    } else {
+      bn.href = "#/login";
+      bn.innerHTML = "🔑<span>Accedi</span>";
+    }
   }
 
   function route() {
     var h = location.hash.replace(/^#\/?/, "");
+    var base = h.split("/")[0];
+    document.querySelectorAll(".bottomnav a").forEach(function (a) {
+      var r = a.getAttribute("data-route");
+      a.classList.toggle("active", r === base || (r === "miei" && base === "login"));
+    });
     window.scrollTo(0, 0);
     var m;
     if ((m = h.match(/^annuncio\/(.+)$/))) return viewDettaglio(m[1]);
