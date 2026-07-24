@@ -1,6 +1,6 @@
 # mercatino-nautico — istruzioni per Claude
 
-Mercatino online dell'usato nautico (windsurf/wing/SUP) per il gruppo WhatsApp di Trieste di Alberto (~190 membri).
+Mercatino online dell'usato nautico (windsurf/wing/SUP) del Friuli Venezia Giulia (nato dal gruppo WhatsApp di Trieste di Alberto, ~190 membri). Brand: "Mercatino Nautico FVG".
 
 - **Repo**: CryptoPannoz/mercatino-nautico (pubblico)
 - **Deploy**: GitHub Pages da `main` → https://cryptopannoz.github.io/mercatino-nautico/

@@ -1,6 +1,6 @@
-# 🌊 Mercatino Nautico Trieste
+# 🌊 Mercatino Nautico FVG
 
-Mercatino online dell'usato **windsurf / wing foil / SUP / attrezzatura nautica** per il gruppo WhatsApp di Trieste (~190 membri).
+Mercatino online dell'usato **windsurf / wing foil / SUP / attrezzatura nautica** per la community windsurf/wing del Friuli Venezia Giulia (nato dal gruppo WhatsApp di Trieste, ~190 membri).
 
 **Sito:** https://cryptopannoz.github.io/mercatino-nautico/
 

@@ -1,4 +1,4 @@
-/* Mercatino Nautico Trieste — SPA vanilla JS + Supabase */
+/* Mercatino Nautico FVG — SPA vanilla JS + Supabase */
 (function () {
   "use strict";
 
@@ -652,11 +652,22 @@
     if (session) { location.hash = "#/miei"; return; }
     $app.innerHTML =
       '<div class="panel login-box"><h2>Accedi</h2>' +
-      '<p style="font-size:.9rem;color:var(--grigio);margin-bottom:14px">Niente password: ti mandiamo un <b>link di accesso</b> via email. Aprilo e sei dentro.</p>' +
+      '<button class="btn btn-ghost" id="btn-google" style="width:100%;gap:10px">' +
+      '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.5 13.2l7.9 6.2C12.3 13.4 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.7 6c4.5-4.2 6.9-10.3 6.9-17.7z"/><path fill="#FBBC05" d="M10.4 28.6c-.5-1.5-.8-3-.8-4.6s.3-3.1.8-4.6l-7.9-6.2C.9 16.1 0 19.9 0 24s.9 7.9 2.5 11.4l7.9-6.8z"/><path fill="#34A853" d="M24 48c6.3 0 11.6-2.1 15.6-5.7l-7.7-6c-2.1 1.4-4.8 2.3-7.9 2.3-6.3 0-11.7-3.9-13.6-9.4l-7.9 6.8C6.5 42.6 14.6 48 24 48z"/></svg>' +
+      "Continua con Google</button>" +
+      '<div style="display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--grigio);font-size:.8rem"><span style="flex:1;border-top:1px solid var(--bordo)"></span>oppure<span style="flex:1;border-top:1px solid var(--bordo)"></span></div>' +
+      '<p style="font-size:.9rem;color:var(--grigio);margin-bottom:14px">Ti mandiamo un <b>link di accesso</b> via email, niente password.</p>' +
       '<form id="form-login">' +
       '<div class="field"><label>La tua email</label><input id="f-email" type="email" required placeholder="nome@esempio.it"></div>' +
       '<button class="btn btn-primary" type="submit" id="btn-login" style="width:100%">Mandami il link</button>' +
       "</form></div>";
+    document.getElementById("btn-google").onclick = async function () {
+      var r = await sb.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: location.origin + location.pathname }
+      });
+      if (r.error) toast("Errore: " + r.error.message);
+    };
     document.getElementById("form-login").onsubmit = async function (e) {
       e.preventDefault();
       var btn = document.getElementById("btn-login");
