@@ -12,6 +12,8 @@ Mercatino online dell'usato **windsurf / wing foil / SUP / attrezzatura nautica*
   - modificare prezzo e testo, segnare **venduto** (resta nello storico) o eliminare;
   - **copiare il link + testo pronto** da incollare nel gruppo WhatsApp, o condividerlo direttamente.
 - Ogni annuncio ha un link permanente `#/annuncio/<id>` → storico organizzato di cosa è in vendita e cosa no.
+- Gli annunci possono essere **Vendo** o **Cerco** (con budget facoltativo; si chiudono con "trovato").
+- Sezione **🏪 Negozio**: gli utenti presenti nella tabella `negozianti` (aggiunti a mano dal dashboard Supabase, vedi commento in `setup.sql`) pubblicano annunci con **disponibilità** (disponibile / su ordinazione / ultimi pezzi / esaurito) che compaiono in una pagina dedicata.
 
 ## Stack
 

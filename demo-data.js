@@ -2,6 +2,47 @@
 // Ispirati ad annunci reali del gruppo, servono a vedere il layout.
 window.MERCATINO_DEMO = [
   {
+    id: "demo-c1",
+    created_at: "2026-07-09T09:59:00Z",
+    tipo: "cerco",
+    titolo: "Cerco tavola wing foil 90-95L",
+    descrizione: "Orientativamente 90/95 litri, anche con qualche segno. Valuto tutto.",
+    prezzo: null,
+    categoria: "wing",
+    stato: "disponibile",
+    venditore: "Tommaso",
+    telefono: "",
+    foto: []
+  },
+  {
+    id: "demo-n1",
+    created_at: "2026-07-11T16:58:00Z",
+    negozio: true,
+    dispo: "disponibile",
+    titolo: "Vele windsurf SIMMER 5.3 Blacktip / Icon 2021 nuove",
+    descrizione: "Disponibilità immediata, sia BLACKTIP che ICON 2021 nuove. Armano 400 RDM e boom 174/175.",
+    prezzo: null,
+    categoria: "vele",
+    stato: "disponibile",
+    venditore: "Luca Dreos",
+    telefono: "",
+    foto: []
+  },
+  {
+    id: "demo-n2",
+    created_at: "2026-07-11T17:01:00Z",
+    negozio: true,
+    dispo: "ultimi",
+    titolo: "Trapezi — forti sconti su tutti i modelli",
+    descrizione: "Sconti su tutta la gamma trapezi finché ci sono taglie.",
+    prezzo: null,
+    categoria: "accessori",
+    stato: "disponibile",
+    venditore: "Luca Dreos",
+    telefono: "",
+    foto: []
+  },
+  {
     id: "demo-1",
     created_at: "2026-07-23T09:24:00Z",
     titolo: "Tavola gonfiabile Reptile Pink Hero 80L",

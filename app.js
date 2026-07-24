@@ -18,13 +18,20 @@
   var CAT_ICON = {
     windsurf: "🏄", wing: "🪁", foil: "🛸", sup: "🚣", vele: "⛵", accessori: "🧰", altro: "📦"
   };
+  var DISPO = {
+    disponibile: { label: "✅ Disponibile", cls: "dispo-ok" },
+    ordinazione: { label: "📦 Su ordinazione", cls: "dispo-ord" },
+    ultimi: { label: "⚠️ Ultimi pezzi", cls: "dispo-ult" },
+    esaurito: { label: "❌ Esaurito", cls: "dispo-no" }
+  };
 
   var $app = document.getElementById("app");
   var $banner = document.getElementById("banner");
   var session = null;
+  var negoziante = null; // {user_id, nome} se l'utente loggato è un negoziante
 
   // filtri correnti della lista (persistono navigando)
-  var filtro = { cat: "", q: "", venduti: false };
+  var filtro = { cat: "", q: "", venduti: false, tipo: "" };
 
   /* ---------------- utilità ---------------- */
 
@@ -127,12 +134,41 @@
 
   /* ---------------- viste ---------------- */
 
+  function cardBadge(i) {
+    if (i.negozio) {
+      var d = DISPO[i.dispo];
+      return d ? '<span class="badge ' + d.cls + '">' + d.label + "</span>" : "";
+    }
+    if (i.stato === "venduto") {
+      return '<span class="badge badge-venduto">' + (i.tipo === "cerco" ? "TROVATO" : "VENDUTO") + "</span>";
+    }
+    if (i.tipo === "cerco") return '<span class="badge badge-cerco">CERCO</span>';
+    return "";
+  }
+
+  function cardHtml(i) {
+    var img = primaFoto(i);
+    var thumb = img
+      ? '<div class="thumb" style="background-image:url(\'' + esc(img) + '\')"></div>'
+      : '<div class="thumb">' + (i.tipo === "cerco" ? "🔍" : (CAT_ICON[i.categoria] || "📦")) + "</div>";
+    return '<a class="card' + (i.stato === "venduto" ? " venduto" : "") + '" href="#/annuncio/' + esc(i.id) + '">' +
+      cardBadge(i) +
+      thumb +
+      '<div class="card-body">' +
+      '<div class="card-title">' + esc(i.titolo) + "</div>" +
+      '<div class="card-price">' + fmtPrezzo(i.prezzo) + "</div>" +
+      '<div class="card-meta"><span>' + esc(i.venditore || "") + "</span><span>" + fmtData(i.created_at) + "</span></div>" +
+      "</div></a>";
+  }
+
   async function viewLista() {
     $app.innerHTML = '<div class="loading">Carico gli annunci…</div>';
     var items = await fetchItems();
 
     var visibili = items.filter(function (i) {
+      if (i.negozio) return false; // il negozio ha la sua pagina
       if (!filtro.venduti && i.stato === "venduto") return false;
+      if (filtro.tipo && (i.tipo || "vendo") !== filtro.tipo) return false;
       if (filtro.cat && i.categoria !== filtro.cat) return false;
       if (filtro.q) {
         var q = filtro.q.toLowerCase();
@@ -142,38 +178,36 @@
       return true;
     });
 
-    var chips = ['<button class="chip' + (filtro.cat === "" ? " active" : "") + '" data-cat="">Tutti</button>'];
+    var tipoChips = [
+      { v: "", l: "Tutti" },
+      { v: "vendo", l: "🏷 Vendo" },
+      { v: "cerco", l: "🔍 Cerco" }
+    ].map(function (t) {
+      return '<button class="chip' + (filtro.tipo === t.v ? " active" : "") + '" data-tipo="' + t.v + '">' + t.l + "</button>";
+    });
+
+    var chips = ['<button class="chip' + (filtro.cat === "" ? " active" : "") + '" data-cat="">Tutte</button>'];
     Object.keys(CATEGORIE).forEach(function (k) {
       chips.push('<button class="chip' + (filtro.cat === k ? " active" : "") + '" data-cat="' + k + '">' +
         CAT_ICON[k] + " " + CATEGORIE[k] + "</button>");
     });
 
-    var cards = visibili.map(function (i) {
-      var img = primaFoto(i);
-      var thumb = img
-        ? '<div class="thumb" style="background-image:url(\'' + esc(img) + '\')"></div>'
-        : '<div class="thumb">' + (CAT_ICON[i.categoria] || "📦") + "</div>";
-      return '<a class="card' + (i.stato === "venduto" ? " venduto" : "") + '" href="#/annuncio/' + esc(i.id) + '">' +
-        (i.stato === "venduto" ? '<span class="badge badge-venduto">VENDUTO</span>' : "") +
-        thumb +
-        '<div class="card-body">' +
-        '<div class="card-title">' + esc(i.titolo) + "</div>" +
-        '<div class="card-price">' + fmtPrezzo(i.prezzo) + "</div>" +
-        '<div class="card-meta"><span>' + esc(i.venditore || "") + "</span><span>" + fmtData(i.created_at) + "</span></div>" +
-        "</div></a>";
-    }).join("");
+    var cards = visibili.map(cardHtml).join("");
 
     $app.innerHTML =
       '<div class="filters">' +
       '<input type="search" id="f-q" placeholder="Cerca (es. gong, 105 litri…)" value="' + esc(filtro.q) + '">' +
-      '<label class="toggle-venduti"><input type="checkbox" id="f-venduti"' + (filtro.venduti ? " checked" : "") + "> anche venduti</label>" +
-      '<div class="chip-row">' + chips.join("") + "</div>" +
+      '<label class="toggle-venduti"><input type="checkbox" id="f-venduti"' + (filtro.venduti ? " checked" : "") + "> anche conclusi</label>" +
+      '<div class="chip-row">' + tipoChips.join("") + '<span class="chip-sep"></span>' + chips.join("") + "</div>" +
       "</div>" +
       (visibili.length
         ? '<div class="grid">' + cards + "</div>"
-        : '<div class="empty"><div class="big">🌊</div>Nessun annuncio' + (filtro.q || filtro.cat ? " con questi filtri" : "") + ".<br>Metti in vendita qualcosa!</div>");
+        : '<div class="empty"><div class="big">🌊</div>Nessun annuncio' + (filtro.q || filtro.cat || filtro.tipo ? " con questi filtri" : "") + ".<br>Pubblica qualcosa!</div>");
 
-    document.querySelectorAll(".chip").forEach(function (c) {
+    document.querySelectorAll(".chip[data-tipo]").forEach(function (c) {
+      c.onclick = function () { filtro.tipo = c.getAttribute("data-tipo"); viewLista(); };
+    });
+    document.querySelectorAll(".chip[data-cat]").forEach(function (c) {
       c.onclick = function () { filtro.cat = c.getAttribute("data-cat"); viewLista(); };
     });
     document.getElementById("f-venduti").onchange = function (e) { filtro.venduti = e.target.checked; viewLista(); };
@@ -182,6 +216,21 @@
       clearTimeout(qInput._h);
       qInput._h = setTimeout(function () { filtro.q = qInput.value.trim(); viewLista(); }, 350);
     };
+  }
+
+  async function viewNegozio() {
+    $app.innerHTML = '<div class="loading">Carico il negozio…</div>';
+    var items = (await fetchItems()).filter(function (i) { return i.negozio; });
+    var nomi = [];
+    items.forEach(function (i) {
+      if (i.venditore && nomi.indexOf(i.venditore) < 0) nomi.push(i.venditore);
+    });
+    $app.innerHTML =
+      '<div class="negozio-head"><h2>🏪 Negozio</h2>' +
+      '<p>Materiale nuovo e d\'occasione dei negozianti del gruppo' + (nomi.length ? " — " + esc(nomi.join(", ")) : "") + ". Prezzi e disponibilità aggiornati da loro.</p></div>" +
+      (items.length
+        ? '<div class="grid">' + items.map(cardHtml).join("") + "</div>"
+        : '<div class="empty"><div class="big">🏪</div>Il negozio è ancora vuoto.</div>');
   }
 
   async function viewDettaglio(id) {
@@ -195,20 +244,23 @@
     var fotoArr = i.foto || [];
     var main = fotoArr.length
       ? '<div class="gallery-main" id="g-main" style="background-image:url(\'' + esc(fotoArr[0].url) + '\')"></div>'
-      : '<div class="gallery-main">' + (CAT_ICON[i.categoria] || "📦") + "</div>";
+      : '<div class="gallery-main">' + (i.tipo === "cerco" ? "🔍" : (CAT_ICON[i.categoria] || "📦")) + "</div>";
     var thumbs = fotoArr.length > 1
       ? '<div class="gallery-thumbs">' + fotoArr.map(function (f, n) {
           return '<img src="' + esc(f.url) + '" class="' + (n === 0 ? "active" : "") + '" data-url="' + esc(f.url) + '" alt="foto ' + (n + 1) + '">';
         }).join("") + "</div>"
       : "";
 
-    var shareText = "🌊 " + i.titolo + " — " + fmtPrezzo(i.prezzo) + "\n" + itemUrl(i.id);
+    var cerco = i.tipo === "cerco";
+    var shareText = (cerco ? "🔍 CERCO: " : "🌊 ") + i.titolo +
+      (i.prezzo != null && i.prezzo !== "" ? " — " + fmtPrezzo(i.prezzo) : "") + "\n" + itemUrl(i.id);
     var mio = session && session.user.id === i.user_id;
 
     var contatto = "";
-    if (i.stato !== "venduto") {
+    if (i.stato !== "venduto" && (!i.negozio || i.dispo !== "esaurito")) {
       var tel = (i.telefono || "").replace(/\s/g, "");
-      contatto = '<div class="contact-box"><b>Contatta ' + esc(i.venditore || "il venditore") + "</b>" +
+      var chi = esc(i.venditore || "il venditore");
+      contatto = '<div class="contact-box"><b>' + (cerco ? "Ce l'hai? Contatta " + chi : "Contatta " + chi) + "</b>" +
         (tel
           ? '<div class="share-row">' +
             '<a class="btn btn-wa btn-sm" href="https://wa.me/' + esc(tel.replace(/^\+/, "").replace(/^00/, "")) +
@@ -222,9 +274,11 @@
       '<div class="detail">' + main + thumbs +
       '<div class="detail-body">' +
       '<div class="detail-head"><div>' +
-      (i.stato === "venduto" ? '<span class="pill-venduto">VENDUTO</span> ' : "") +
+      (i.stato === "venduto" ? '<span class="pill-venduto">' + (cerco ? "TROVATO" : "VENDUTO") + "</span> " : "") +
+      (cerco && i.stato !== "venduto" ? '<span class="pill-cerco">🔍 CERCO</span> ' : "") +
+      (i.negozio && DISPO[i.dispo] ? '<span class="pill-dispo ' + DISPO[i.dispo].cls + '">' + DISPO[i.dispo].label + "</span> " : "") +
       '<div class="detail-title">' + esc(i.titolo) + "</div>" +
-      '<div class="detail-meta">' + (CAT_ICON[i.categoria] || "") + " " + esc(CATEGORIE[i.categoria] || i.categoria) +
+      '<div class="detail-meta">' + (i.negozio ? "🏪 Negozio · " : "") + (CAT_ICON[i.categoria] || "") + " " + esc(CATEGORIE[i.categoria] || i.categoria) +
       " · pubblicato " + fmtData(i.created_at) + (i.venditore ? " da <b>" + esc(i.venditore) + "</b>" : "") + "</div>" +
       "</div>" +
       '<div class="detail-price">' + fmtPrezzo(i.prezzo) + "</div></div>" +
@@ -292,12 +346,26 @@
       return '<option value="' + k + '"' + sel + ">" + CAT_ICON[k] + " " + CATEGORIE[k] + "</option>";
     }).join("");
 
+    var tipoVal = item ? item.tipo || "vendo" : "vendo";
+    var dispoOpts = Object.keys(DISPO).map(function (k) {
+      var sel = (item && item.dispo ? item.dispo === k : k === "disponibile") ? " selected" : "";
+      return '<option value="' + k + '"' + sel + ">" + DISPO[k].label + "</option>";
+    }).join("");
+
     $app.innerHTML =
       '<div class="panel"><h2>' + (item ? "✏️ Modifica annuncio" : "📦 Nuovo annuncio") + "</h2>" +
       '<form id="form-item">' +
+      '<div class="field"><label>Tipo</label><div class="seg" id="f-tipo">' +
+      '<label class="seg-opt"><input type="radio" name="tipo" value="vendo"' + (tipoVal === "vendo" ? " checked" : "") + "> 🏷 Vendo</label>" +
+      '<label class="seg-opt"><input type="radio" name="tipo" value="cerco"' + (tipoVal === "cerco" ? " checked" : "") + "> 🔍 Cerco</label>" +
+      "</div></div>" +
+      (negoziante
+        ? '<div class="field negozio-field"><label class="toggle-venduti" style="font-size:.9rem"><input type="checkbox" id="f-negozio"' + (item && item.negozio ? " checked" : "") + "> 🏪 <b>Annuncio del negozio</b> (" + esc(negoziante.nome) + ")</label>" +
+          '<div id="f-dispo-wrap" class="' + (item && item.negozio ? "" : "hidden") + '" style="margin-top:8px"><label>Disponibilità</label><select id="f-dispo">' + dispoOpts + "</select></div></div>"
+        : "") +
       '<div class="field"><label>Titolo *</label><input id="f-titolo" required maxlength="90" placeholder="Es. Tavola wing 105L Duotone" value="' + esc(item ? item.titolo : "") + '"></div>' +
       '<div class="form-row">' +
-      '<div class="field"><label>Prezzo (€) *</label><input id="f-prezzo" type="number" min="0" step="1" required inputmode="numeric" value="' + esc(item && item.prezzo != null ? item.prezzo : "") + '"></div>' +
+      '<div class="field"><label id="l-prezzo">Prezzo (€) *</label><input id="f-prezzo" type="number" min="0" step="1" required inputmode="numeric" value="' + esc(item && item.prezzo != null ? item.prezzo : "") + '"></div>' +
       '<div class="field"><label>Categoria</label><select id="f-cat">' + catOpts + "</select></div>" +
       "</div>" +
       '<div class="field"><label>Descrizione</label><textarea id="f-desc" maxlength="1200" placeholder="Condizioni, misure, anno, dove si può vedere…">' + esc(item ? item.descrizione || "" : "") + "</textarea></div>" +
@@ -313,6 +381,28 @@
       '<button class="btn btn-primary" type="submit" id="btn-save">' + (item ? "Salva modifiche" : "Pubblica annuncio") + "</button>" +
       '<a class="btn btn-ghost" href="' + (item ? "#/annuncio/" + esc(item.id) : "#/") + '">Annulla</a>' +
       "</div></form></div>";
+
+    // prezzo obbligatorio solo per "vendo"; per "cerco" è un budget facoltativo
+    function tipoCorrente() {
+      var r = document.querySelector('#f-tipo input:checked');
+      return r ? r.value : "vendo";
+    }
+    function aggiornaPrezzo() {
+      var cerco = tipoCorrente() === "cerco";
+      var inp = document.getElementById("f-prezzo");
+      inp.required = !cerco;
+      inp.placeholder = cerco ? "budget (facoltativo)" : "";
+      document.getElementById("l-prezzo").textContent = cerco ? "Budget (€)" : "Prezzo (€) *";
+    }
+    document.querySelectorAll('#f-tipo input').forEach(function (r) { r.onchange = aggiornaPrezzo; });
+    aggiornaPrezzo();
+
+    var $negozio = document.getElementById("f-negozio");
+    if ($negozio) {
+      $negozio.onchange = function () {
+        document.getElementById("f-dispo-wrap").classList.toggle("hidden", !$negozio.checked);
+      };
+    }
 
     // stato foto: esistenti {url,path} + nuove (File)
     var fotoEsistenti = item && item.foto ? item.foto.slice() : [];
@@ -370,13 +460,18 @@
           fotoFinali.push(await uploadFoto(blob, session.user.id));
         }
 
+        var isNegozio = !!($negozio && $negozio.checked);
+        var prezzoRaw = document.getElementById("f-prezzo").value;
         var record = {
           titolo: document.getElementById("f-titolo").value.trim(),
-          prezzo: Number(document.getElementById("f-prezzo").value),
+          prezzo: prezzoRaw === "" ? null : Number(prezzoRaw),
           categoria: document.getElementById("f-cat").value,
           descrizione: document.getElementById("f-desc").value.trim(),
-          venditore: nome,
+          venditore: isNegozio ? negoziante.nome : nome,
           telefono: tel,
+          tipo: isNegozio ? "vendo" : tipoCorrente(),
+          negozio: isNegozio,
+          dispo: isNegozio ? document.getElementById("f-dispo").value : null,
           foto: fotoFinali
         };
 
@@ -411,12 +506,19 @@
     $app.innerHTML = "<h2 style='margin-bottom:12px;font-size:1.1rem'>I miei annunci</h2><div class='mine-list'>" +
       items.map(function (i) {
         var img = primaFoto(i);
+        var cerco = i.tipo === "cerco";
+        var statoTxt = i.negozio
+          ? "🏪 negozio · " + (DISPO[i.dispo] ? DISPO[i.dispo].label : "")
+          : (i.stato === "venduto" ? (cerco ? "✔ trovato" : "🔴 venduto") : (cerco ? "🔍 cerco" : "🟢 in vendita"));
+        var btnStato = i.negozio ? "" :
+          '<button class="btn ' + (i.stato === "venduto" ? "btn-verde" : "btn-blu") + ' btn-sm act-stato">' +
+          (i.stato === "venduto" ? (cerco ? "Riapri ricerca" : "Rimetti in vendita") : (cerco ? "Segna trovato" : "Segna venduto")) + "</button>";
         return '<div class="mine-row" data-id="' + esc(i.id) + '">' +
-          '<a class="thumb" href="#/annuncio/' + esc(i.id) + '"' + (img ? ' style="background-image:url(\'' + esc(img) + '\')"' : "") + ">" + (img ? "" : (CAT_ICON[i.categoria] || "📦")) + "</a>" +
-          '<div class="mine-info"><div class="t">' + esc(i.titolo) + '</div><div class="p">' + fmtPrezzo(i.prezzo) + '</div><div class="s">' + (i.stato === "venduto" ? "🔴 venduto" : "🟢 in vendita") + " · " + fmtData(i.created_at) + "</div></div>" +
+          '<a class="thumb" href="#/annuncio/' + esc(i.id) + '"' + (img ? ' style="background-image:url(\'' + esc(img) + '\')"' : "") + ">" + (img ? "" : (cerco ? "🔍" : (CAT_ICON[i.categoria] || "📦"))) + "</a>" +
+          '<div class="mine-info"><div class="t">' + esc(i.titolo) + '</div><div class="p">' + fmtPrezzo(i.prezzo) + '</div><div class="s">' + statoTxt + " · " + fmtData(i.created_at) + "</div></div>" +
           '<div class="mine-actions">' +
           '<button class="btn btn-ghost btn-sm act-prezzo">€ Prezzo</button>' +
-          '<button class="btn ' + (i.stato === "venduto" ? "btn-verde" : "btn-blu") + ' btn-sm act-stato">' + (i.stato === "venduto" ? "Rimetti in vendita" : "Segna venduto") + "</button>" +
+          btnStato +
           '<a class="btn btn-ghost btn-sm" href="#/modifica/' + esc(i.id) + '">✏️</a>' +
           '<button class="btn btn-danger btn-sm act-del">🗑</button>' +
           "</div></div>";
@@ -436,15 +538,19 @@
         else { toast("Prezzo aggiornato ✔"); viewMiei(); }
       };
 
-      row.querySelector(".act-stato").onclick = async function () {
+      var btnStato = row.querySelector(".act-stato");
+      if (btnStato) btnStato.onclick = async function () {
         var nuovo = item.stato === "venduto" ? "disponibile" : "venduto";
         var u = await sb.from("annunci").update({ stato: nuovo }).eq("id", id);
         if (u.error) toast("Errore: " + u.error.message);
-        else { toast(nuovo === "venduto" ? "Segnato come venduto 🎉" : "Rimesso in vendita"); viewMiei(); }
+        else {
+          toast(nuovo === "venduto" ? (item.tipo === "cerco" ? "Segnato come trovato 🎉" : "Segnato come venduto 🎉") : (item.tipo === "cerco" ? "Ricerca riaperta" : "Rimesso in vendita"));
+          viewMiei();
+        }
       };
 
       row.querySelector(".act-del").onclick = async function () {
-        if (!confirm("Eliminare definitivamente \"" + item.titolo + "\"?\nSe è stato venduto, meglio segnarlo venduto: resta nello storico.")) return;
+        if (!confirm("Eliminare definitivamente \"" + item.titolo + "\"?\nSe è concluso, meglio segnarlo venduto/trovato: resta nello storico.")) return;
         if (item.foto && item.foto.length) {
           var paths = item.foto.map(function (f) { return f.path; }).filter(Boolean);
           if (paths.length) await sb.storage.from("foto").remove(paths);
@@ -502,7 +608,15 @@
     if (h === "nuovo") return viewForm(null);
     if (h === "miei") return viewMiei();
     if (h === "login") return viewLogin();
+    if (h === "negozio") return viewNegozio();
     return viewLista();
+  }
+
+  async function caricaNegoziante() {
+    negoziante = null;
+    if (DEMO || !session) return;
+    var r = await sb.from("negozianti").select("*").eq("user_id", session.user.id).maybeSingle();
+    if (!r.error) negoziante = r.data;
   }
 
   async function init() {
@@ -511,9 +625,11 @@
     } else {
       var s = await sb.auth.getSession();
       session = s.data.session;
+      await caricaNegoziante();
       sb.auth.onAuthStateChange(function (_ev, sess) {
         var prima = !!session;
         session = sess;
+        caricaNegoziante();
         aggiornaNav();
         if (!prima && sess) { toast("Accesso effettuato ✔"); if (location.hash === "#/login") location.hash = "#/"; }
       });

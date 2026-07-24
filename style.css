@@ -107,6 +107,11 @@ a { color: var(--blu); text-decoration: none; }
   font-size: .7rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; color: #fff;
 }
 .badge-venduto { background: var(--rosso); }
+.badge-cerco { background: var(--teal); }
+.dispo-ok { background: var(--verde); }
+.dispo-ord { background: #b57e10; }
+.dispo-ult { background: var(--arancio); }
+.dispo-no { background: #6b7c88; }
 .badge-cat {
   position: static; background: #e8f1f7; color: var(--blu); font-weight: 600;
   padding: 2px 8px; border-radius: 999px; font-size: .7rem;
@@ -137,6 +142,33 @@ a { color: var(--blu); text-decoration: none; }
   display: inline-block; background: var(--rosso); color: #fff; font-weight: 700;
   font-size: .78rem; padding: 3px 12px; border-radius: 999px;
 }
+.pill-cerco {
+  display: inline-block; background: var(--teal); color: #fff; font-weight: 700;
+  font-size: .78rem; padding: 3px 12px; border-radius: 999px;
+}
+.pill-dispo {
+  display: inline-block; color: #fff; font-weight: 700;
+  font-size: .78rem; padding: 3px 12px; border-radius: 999px;
+}
+
+/* ---------- negozio ---------- */
+.negozio-head { margin-bottom: 14px; }
+.negozio-head h2 { font-size: 1.2rem; }
+.negozio-head p { font-size: .88rem; color: var(--grigio); margin-top: 4px; }
+
+/* ---------- segmented tipo vendo/cerco ---------- */
+.seg { display: flex; gap: 8px; }
+.seg-opt {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: 1px solid var(--bordo); border-radius: 10px; padding: 9px;
+  font-size: .92rem; font-weight: 600; cursor: pointer; background: #fff;
+}
+.seg-opt:has(input:checked) { background: var(--blu); border-color: var(--blu); color: #fff; }
+.seg-opt input { accent-color: #fff; }
+.negozio-field {
+  background: #f4f0fa; border: 1px solid #ddd2ef; border-radius: 10px; padding: 10px 12px;
+}
+.chip-sep { border-left: 1px solid var(--bordo); margin: 0 2px; }
 .contact-box {
   background: #eef6f2; border: 1px solid #cde5d8; border-radius: 10px;
   padding: 12px 14px; font-size: .92rem; display: flex; flex-direction: column; gap: 6px;
